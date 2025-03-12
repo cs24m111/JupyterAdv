@@ -1,0 +1,8 @@
+{
+  "jupyter.lab.shortcuts": [],
+  "title": "jupyterlab_adv",
+  "description": "jupyterlab_adv settings.",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}
