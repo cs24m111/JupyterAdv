@@ -1,5 +1,5 @@
 {
-    "name": "ai-code-assistant",
+    "name": "jupyterlab_adv",
     "version": "0.1.0",
     "description": "A JupyterLab extension with AI-powered code assistant.",
     "keywords": [
@@ -47,7 +47,7 @@
     },
     "jupyterlab": {
         "extension": true,
-        "outputDir": "ai-code-assistant/labextension",
+        "outputDir": "jupyterlab_adv/labextension",
         "schemaDir": "schema"
     }
 }
