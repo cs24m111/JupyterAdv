@@ -1,7 +1,7 @@
 {
   "jupyter.lab.shortcuts": [],
-  "title": "jupyterlab_adv",
-  "description": "jupyterlab_adv settings.",
+  "title": "ai-code-assistant",
+  "description": "ai-code-assistant settings.",
   "type": "object",
   "properties": {},
   "additionalProperties": false

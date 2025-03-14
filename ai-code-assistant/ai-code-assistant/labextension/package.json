@@ -22,23 +22,26 @@
   "types": "lib/index.d.ts",
   "style": "style/index.css",
   "scripts": {
-    "build": "tsc --sourceMap",
+    "build": "tsc --build",
     "build:labextension": "jupyter labextension build .",
     "clean": "rimraf lib tsconfig.tsbuildinfo",
-    "watch": "tsc -w --sourceMap"
+    "watch": "tsc --watch",
+    "prepare": "npm run build"
   },
   "dependencies": {
+    "@jupyterlab/application": "^4.0.0",
     "@jupyterlab/apputils": "^4.0.0",
     "@jupyterlab/notebook": "^4.0.0",
-    "axios": "^0.21.1",
-    "@jupyterlab/application": "^4.0.0",
-    "@jupyterlab/settingregistry": "^4.0.0"
+    "@jupyterlab/settingregistry": "^4.0.0",
+    "axios": "^1.8.3",
+    "openai": "^4.67.3"
   },
   "devDependencies": {
-    "@types/node": "^14.14.37",
+    "@jupyterlab/builder": "^4.0.0",
+    "@types/eslint": "^9.6.1",
     "@types/jest": "^29.2.0",
     "@types/json-schema": "^7.0.11",
-    "@jupyterlab/builder": "^4.3.5",
+    "@types/node": "^14.14.37",
     "rimraf": "^5.0.1",
     "typescript": "~5.0.2"
   },
@@ -47,7 +50,7 @@
     "outputDir": "ai-code-assistant/labextension",
     "schemaDir": "schema",
     "_build": {
-      "load": "static/remoteEntry.68c4c29643e0723bcd0e.js",
+      "load": "static/remoteEntry.7c7fd990bd09f450823e.js",
       "extension": "./extension",
       "style": "./style"
     }

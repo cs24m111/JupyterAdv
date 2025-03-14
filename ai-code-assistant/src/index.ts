@@ -3,8 +3,6 @@ import {
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 
-import { ISettingRegistry } from '@jupyterlab/settingregistry';
-
 import { ICommandPalette } from '@jupyterlab/apputils';
 
 import { INotebookTracker } from '@jupyterlab/notebook';
@@ -12,32 +10,19 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 import { generateCodeFromDescription, explainSelectedCode } from './commands';
 
 /**
- * Initialization data for the jupyterlab_adv extension.
+ * Initialization data for the ai-code-assistant extension.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
   id: 'ai-code-assistant:plugin',
   description: 'A JupyterLab extension with AI-powered code assistant.',
   autoStart: true,
-  optional: [ISettingRegistry],
   requires: [ICommandPalette, INotebookTracker],
   activate: (
     app: JupyterFrontEnd,
-    settingRegistry: ISettingRegistry | null,
     palette: ICommandPalette,
     notebookTracker: INotebookTracker
   ) => {
-    console.log('JupyterLab extension jupyterlab_adv is activated!');
-
-    if (settingRegistry) {
-      settingRegistry
-        .load(plugin.id)
-        .then(settings => {
-          console.log('jupyterlab_adv settings loaded:', settings.composite);
-        })
-        .catch(reason => {
-          console.error('Failed to load settings for jupyterlab_adv.', reason);
-        });
-    }
+    console.log('JupyterLab extension ai-code-assistant is activated!');
 
     // Command to generate code from description
     const generateCommand = 'ai:generate-code';
@@ -47,6 +32,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
         const current = notebookTracker.currentWidget;
         if (current) {
           generateCodeFromDescription(current);
+        } else {
+          console.warn('No active notebook found.');
         }
       }
     });
@@ -60,6 +47,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
         const current = notebookTracker.currentWidget;
         if (current) {
           explainSelectedCode(current);
+        } else {
+          console.warn('No active notebook found.');
         }
       }
     });
