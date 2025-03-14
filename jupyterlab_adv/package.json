@@ -1,7 +1,7 @@
 {
     "name": "jupyterlab_adv",
     "version": "0.1.0",
-    "description": "A JupyterLab extension with AI-powered code assistant.",
+    "description": "A JupyterLab extension with AI-powered code assistant and enhanced performance metrics.",
     "keywords": [
         "jupyter",
         "jupyterlab",
@@ -34,10 +34,12 @@
         "@jupyterlab/notebook": "^4.0.0",
         "@jupyterlab/settingregistry": "^4.0.0",
         "axios": "^1.8.3",
+        "chart.js": "^3.9.1",
         "openai": "^4.67.3"
     },
     "devDependencies": {
         "@jupyterlab/builder": "^4.0.0",
+        "@types/chart.js": "^2.9.41",
         "@types/eslint": "^9.6.1",
         "@types/jest": "^29.2.0",
         "@types/json-schema": "^7.0.11",

@@ -2,19 +2,16 @@ import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
-
-import { ICommandPalette } from '@jupyterlab/apputils';
-
+import { ICommandPalette, ToolbarButton } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
-
-import { generateCodeFromDescription, explainSelectedCode } from './commands';
+import { generateCodeFromDescription, explainSelectedCode, measurePerformance } from './commands';
 
 /**
  * Initialization data for the ai-code-assistant extension.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
   id: 'ai-code-assistant:plugin',
-  description: 'A JupyterLab extension with AI-powered code assistant.',
+  description: 'A JupyterLab extension with AI-powered code assistant and enhanced performance metrics.',
   autoStart: true,
   requires: [ICommandPalette, INotebookTracker],
   activate: (
@@ -53,6 +50,30 @@ const plugin: JupyterFrontEndPlugin<void> = {
       }
     });
     palette.addItem({ command: explainCommand, category: 'AI Assistant' });
+
+    // Command to measure performance
+    const measureCommand = 'ai:measure-performance';
+    app.commands.addCommand(measureCommand, {
+      label: 'Measure Performance',
+      execute: () => {
+        const current = notebookTracker.currentWidget;
+        if (current) {
+          measurePerformance(current);
+        } else {
+          console.warn('No active notebook found.');
+        }
+      }
+    });
+    palette.addItem({ command: measureCommand, category: 'AI Assistant' });
+
+    // Add button to notebook toolbar
+    notebookTracker.widgetAdded.connect((sender, panel) => {
+      const button = new ToolbarButton({
+        label: 'Measure Performance',
+        onClick: () => app.commands.execute(measureCommand)
+      });
+      panel.toolbar.insertItem(10, 'measurePerformance', button);
+    });
   }
 };
 
