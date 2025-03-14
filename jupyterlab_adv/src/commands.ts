@@ -6,6 +6,10 @@ import { KernelMessage } from '@jupyterlab/services';
 import Chart from 'chart.js/auto';
 import aiClient from './ai-client';
 import { Widget } from '@lumino/widgets';
+import { predictExecutionTime, predictErrors } from './predictive';
+import { suggestTypes } from './type-inference';
+import { suggestNextWorkflowStep } from './workflow';
+import { predictParameterImpact } from './parameter-impact';
 
 /**
  * Generates code from a user-provided description and inserts it into the active code cell.
@@ -494,4 +498,62 @@ function convertMarkdownToHtml(markdown: string): string {
   // Ensure standalone text is wrapped properly
   html = html.replace(/(^[^<].*?(?=<|$))/gm, '<p>$1</p>');
   return html;
+}
+
+export async function predictCodeBehavior(notebookPanel: NotebookPanel) {
+  const notebook = notebookPanel.content;
+  const activeCell = notebook.activeCell;
+
+  if (!activeCell || activeCell.model.type !== 'code') {
+    await showDialog({ title: 'Error', body: 'Please select a code cell.', buttons: [Dialog.okButton()] });
+    return;
+  }
+
+  const code = activeCell.model.sharedModel.getSource();
+  let execTime: string, errors: string, types: string, workflow: string, paramImpact: string;
+  try { execTime = await predictExecutionTime(code) || 'Not available'; } catch (e: any) { execTime = `Error: ${e.message}`; }
+  try { errors = await predictErrors(code) || 'Not available'; } catch (e: any) { errors = `Error: ${e.message}`; }
+  try { types = await suggestTypes(code) || 'Not available'; } catch (e: any) { types = `Error: ${e.message}`; }
+  try { workflow = await suggestNextWorkflowStep(code) || 'Not available'; } catch (e: any) { workflow = `Error: ${e.message}`; }
+  try { paramImpact = await predictParameterImpact(code) || 'Not available'; } catch (e: any) { paramImpact = `Error: ${e.message}`; }
+
+  const markdownReport = `
+## Code Behavior Predictions
+
+- **Predicted Execution Time**: ${execTime}
+- **Error Likelihood**: ${errors}
+- **Type Suggestions**: ${types}
+- **Next Workflow Step**: ${workflow}
+- **Parameter Impact**: ${paramImpact}
+  `;
+
+  const dialogBody = new Widget({ node: document.createElement('div') });
+  dialogBody.node.innerHTML = `
+    <style>
+      .prediction-report { 
+        padding: 15px; 
+        font-family: Arial, sans-serif; 
+        line-height: 1.6; 
+      }
+      .prediction-report h1, .prediction-report h2, .prediction-report h3 { 
+        margin: 0 0 10px 0; 
+        color: #0056d2; 
+      }
+      .prediction-report strong { 
+        font-weight: bold; 
+      }
+      .prediction-report ul { 
+        list-style-type: disc; 
+        padding-left: 20px; 
+        margin: 10px 0; 
+      }
+    </style>
+    <div class="prediction-report">${convertMarkdownToHtml(markdownReport)}</div>
+  `;
+
+  await showDialog({
+    title: 'Code Behavior Predictions',
+    body: dialogBody,
+    buttons: [Dialog.okButton()]
+  });
 }

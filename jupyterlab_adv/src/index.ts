@@ -4,7 +4,7 @@ import {
 } from '@jupyterlab/application';
 import { ICommandPalette, ToolbarButton } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { generateCodeFromDescription, explainSelectedCode, measurePerformance } from './commands';
+import { generateCodeFromDescription, explainSelectedCode, measurePerformance, predictCodeBehavior } from './commands';
 
 /**
  * Initialization data for the ai-code-assistant extension.
@@ -66,14 +66,31 @@ const plugin: JupyterFrontEndPlugin<void> = {
     });
     palette.addItem({ command: measureCommand, category: 'AI Assistant' });
 
+    const predictCommand = 'ai:predict-behavior';
+    app.commands.addCommand(predictCommand, {
+      label: 'Predict Code Behavior',
+      execute: () => {
+        const current = notebookTracker.currentWidget;
+        if (current) predictCodeBehavior(current);
+      }
+    });
+    palette.addItem({ command: predictCommand, category: 'AI Assistant' });
+
     // Add button to notebook toolbar
     notebookTracker.widgetAdded.connect((sender, panel) => {
-      const button = new ToolbarButton({
+      const measureButton = new ToolbarButton({
         label: 'Measure Performance',
         onClick: () => app.commands.execute(measureCommand)
       });
-      panel.toolbar.insertItem(10, 'measurePerformance', button);
+      const predictButton = new ToolbarButton({
+        label: 'Predict Behavior',
+        onClick: () => app.commands.execute(predictCommand)
+      });
+      panel.toolbar.insertItem(10, 'measurePerformance', measureButton);
+      panel.toolbar.insertItem(11, 'predictBehavior', predictButton);
     });
+
+
   }
 };
 

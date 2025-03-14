@@ -59,6 +59,19 @@ class AIClient {
       throw error;
     }
   }
+
+  async predictInsight(prompt: string): Promise<string> {
+    try {
+      const response = await apiClient.post('/v1beta/models/gemini-2.0-flash:generateContent', {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 300, temperature: 0.6 },
+      });
+      return response.data.candidates[0].content.parts[0].text || 'No prediction generated';
+    } catch (error) {
+      console.error('Error predicting insight:', error);
+      throw error;
+    }
+  }
 }
 
 export default new AIClient();
