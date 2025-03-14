@@ -10,7 +10,7 @@ import { generateCodeFromDescription, explainSelectedCode, measurePerformance } 
  * Initialization data for the ai-code-assistant extension.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
-  id: 'ai-code-assistant:plugin',
+  id: 'jupyterlab_adv:plugin',
   description: 'A JupyterLab extension with AI-powered code assistant and enhanced performance metrics.',
   autoStart: true,
   requires: [ICommandPalette, INotebookTracker],

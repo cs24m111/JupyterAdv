@@ -1,4 +1,4 @@
-import { Dialog, showDialog, InputDialog, Spinner } from '@jupyterlab/apputils';
+import { Dialog, showDialog, InputDialog } from '@jupyterlab/apputils';
 import { NotebookPanel } from '@jupyterlab/notebook';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { ISharedText } from '@jupyter/ydoc';
@@ -189,10 +189,6 @@ print("===PERFORMANCE_METRICS_END===")
     return;
   }
 
-  // Add spinner for UI feedback
-  const spinner = new Spinner();
-  notebookPanel.content.node.appendChild(spinner.node);
-
   const future = kernel.requestExecute({ code: wrappedCode });
   let output = '';
   future.onIOPub = (msg: KernelMessage.IIOPubMessage) => {
@@ -202,11 +198,9 @@ print("===PERFORMANCE_METRICS_END===")
   };
 
   await future.done;
-  spinner.dispose();
-
   const metrics = parseMetrics(output);
   if (metrics) {
-    showPerformanceDialog(metrics);
+    await showPerformanceDialog(metrics);
   } else {
     await showDialog({
       title: 'Error',
@@ -260,16 +254,49 @@ function parseMetrics(output: string): {
 }
 
 /**
- * Displays performance metrics in a dialog with multiple charts and a summary.
+ * Generates a summary report in Markdown format using the Gemini AI API.
+ * @param metrics The performance metrics to summarize
+ * @returns A Markdown-formatted summary string
+ */
+async function generateSummary(metrics: {
+  wallTime: number;
+  cpuTime: number;
+  memoryUsed: number;
+  ioReadCount?: number;
+  ioWriteCount?: number;
+}): Promise<string> {
+  const prompt = `
+    Provide a performance summary in Markdown format for the following metrics:
+    - Wall Time: ${metrics.wallTime.toFixed(4)} seconds
+    - CPU Time: ${metrics.cpuTime.toFixed(4)} seconds
+    - Memory Used: ${metrics.memoryUsed.toFixed(2)} MB
+    ${metrics.ioReadCount !== undefined ? `- I/O Read Count: ${metrics.ioReadCount}` : ''}
+    ${metrics.ioWriteCount !== undefined ? `- I/O Write Count: ${metrics.ioWriteCount}` : ''}
+    Include headings, bold text, and bullet points where appropriate, and highlight potential performance issues.
+  `;
+
+  try {
+    const summary = await aiClient.explainCode(prompt); // Assuming explainCode can handle general text prompts
+    return summary || '## Summary\nFailed to generate summary from Gemini AI.';
+  } catch (error) {
+    console.error('Error generating summary:', error);
+    return `## Summary\nFailed to generate summary: ${(error as Error).message}`;
+  }
+}
+
+/**
+ * Displays performance metrics in a dialog with multiple charts and a Markdown-formatted summary.
  * @param metrics The performance metrics to display
  */
-function showPerformanceDialog(metrics: {
+async function showPerformanceDialog(metrics: {
   wallTime: number;
   cpuTime: number;
   memoryUsed: number;
   ioReadCount?: number;
   ioWriteCount?: number;
 }) {
+  const summary = await generateSummary(metrics);
+
   const dialog = new Dialog({
     title: 'Performance Metrics',
     body: new Widget(),
@@ -280,44 +307,91 @@ function showPerformanceDialog(metrics: {
   if (content) {
     let html = `
       <style>
-        .metrics-section { margin: 10px 0; }
-        .metrics-list { list-style: none; padding: 0; }
-        .metrics-list li { padding: 5px 0; }
-        .chart-container { margin-top: 20px; }
-        .summary { background: #f0f8ff; padding: 10px; border-radius: 5px; }
+        .metrics-container { 
+          max-height: 500px; 
+          overflow-y: auto; 
+          padding: 10px; 
+          font-family: Arial, sans-serif; 
+        }
+        .metrics-section { 
+          margin: 15px 0; 
+          border: 1px solid #e0e0e0; 
+          border-radius: 5px; 
+          padding: 10px; 
+          background: #fafafa; 
+        }
+        .metrics-list { 
+          list-style: none; 
+          padding: 0; 
+          margin: 0; 
+        }
+        .metrics-list li { 
+          padding: 8px 0; 
+          border-bottom: 1px solid #eee; 
+        }
+        .metrics-list li:last-child { 
+          border-bottom: none; 
+        }
+        .chart-container { 
+          margin-top: 20px; 
+          padding: 10px; 
+          background: #fff; 
+          border: 1px solid #ddd; 
+          border-radius: 5px; 
+        }
+        .summary { 
+          padding: 15px; 
+          border-radius: 5px; 
+          background: #f0f8ff; 
+          line-height: 1.6; 
+        }
+        .summary h1, .summary h2, .summary h3 { 
+          margin: 0 0 10px 0; 
+          color: #0056d2; 
+        }
+        .summary strong { 
+          font-weight: bold; 
+        }
+        .summary ul { 
+          list-style-type: disc; 
+          padding-left: 20px; 
+          margin: 10px 0; 
+        }
+        h3, h4 { 
+          margin: 0 0 10px 0; 
+          color: #0056d2; 
+        }
       </style>
-      <div class="metrics-section">
-        <h3>Performance Summary</h3>
-        <div class="summary">
-          The code executed in ${metrics.wallTime.toFixed(2)} seconds, using ${metrics.cpuTime.toFixed(2)} seconds of CPU time.
-          It used approximately ${metrics.memoryUsed.toFixed(2)} MB of memory.
-          ${metrics.ioReadCount !== undefined ? `It performed ${metrics.ioReadCount} I/O reads and ${metrics.ioWriteCount} I/O writes.` : ''}
+      <div class="metrics-container">
+        <div class="metrics-section">
+          <h3>Performance Summary</h3>
+          <div class="summary">${convertMarkdownToHtml(summary)}</div>
         </div>
+        <div class="metrics-section">
+          <h4>Detailed Metrics</h4>
+          <ul class="metrics-list">
+            <li><strong>Wall Time:</strong> ${metrics.wallTime.toFixed(4)} seconds</li>
+            <li><strong>CPU Time:</strong> ${metrics.cpuTime.toFixed(4)} seconds</li>
+            <li><strong>Memory Used:</strong> ${metrics.memoryUsed.toFixed(2)} MB (approximation)</li>
+            ${metrics.ioReadCount !== undefined ? `<li><strong>I/O Read Count:</strong> ${metrics.ioReadCount}</li>` : ''}
+            ${metrics.ioWriteCount !== undefined ? `<li><strong>I/O Write Count:</strong> ${metrics.ioWriteCount}</li>` : ''}
+          </ul>
+        </div>
+        <div class="chart-container">
+          <h4>Time Metrics</h4>
+          <canvas id="timeChart" width="400" height="200"></canvas>
+        </div>
+        <div class="chart-container">
+          <h4>Memory Metrics</h4>
+          <canvas id="memoryChart" width="400" height="200"></canvas>
+        </div>
+        ${metrics.ioReadCount !== undefined || metrics.ioWriteCount !== undefined ? `
+        <div class="chart-container">
+          <h4>I/O Metrics</h4>
+          <canvas id="ioChart" width="400" height="200"></canvas>
+        </div>
+        ` : ''}
       </div>
-      <div class="metrics-section">
-        <h4>Detailed Metrics</h4>
-        <ul class="metrics-list">
-          <li>Wall Time: ${metrics.wallTime.toFixed(4)} seconds</li>
-          <li>CPU Time: ${metrics.cpuTime.toFixed(4)} seconds</li>
-          <li>Memory Used: ${metrics.memoryUsed.toFixed(2)} MB (approximation)</li>
-          ${metrics.ioReadCount !== undefined ? `<li>I/O Read Count: ${metrics.ioReadCount}</li>` : ''}
-          ${metrics.ioWriteCount !== undefined ? `<li>I/O Write Count: ${metrics.ioWriteCount}</li>` : ''}
-        </ul>
-      </div>
-      <div class="chart-container">
-        <h4>Time Metrics</h4>
-        <canvas id="timeChart" width="400" height="200"></canvas>
-      </div>
-      <div class="chart-container">
-        <h4>Memory Metrics</h4>
-        <canvas id="memoryChart" width="400" height="200"></canvas>
-      </div>
-      ${metrics.ioReadCount !== undefined || metrics.ioWriteCount !== undefined ? `
-      <div class="chart-container">
-        <h4>I/O Metrics</h4>
-        <canvas id="ioChart" width="400" height="200"></canvas>
-      </div>
-      ` : ''}
     `;
     content.innerHTML = html;
 
@@ -331,13 +405,14 @@ function showPerformanceDialog(metrics: {
           datasets: [{
             label: 'Time (seconds)',
             data: [metrics.wallTime, metrics.cpuTime],
-            backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+            backgroundColor: ['rgba(75, 192, 192, 0.4)', 'rgba(255, 99, 132, 0.4)'],
             borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
             borderWidth: 1
           }]
         },
         options: {
-          scales: { y: { beginAtZero: true } }
+          scales: { y: { beginAtZero: true, title: { display: true, text: 'Seconds' } } },
+          plugins: { legend: { display: false } }
         }
       });
     }
@@ -352,13 +427,14 @@ function showPerformanceDialog(metrics: {
           datasets: [{
             label: 'Memory',
             data: [metrics.memoryUsed],
-            backgroundColor: ['rgba(255, 206, 86, 0.2)'],
+            backgroundColor: ['rgba(255, 206, 86, 0.4)'],
             borderColor: ['rgba(255, 206, 86, 1)'],
             borderWidth: 1
           }]
         },
         options: {
-          scales: { y: { beginAtZero: true } }
+          scales: { y: { beginAtZero: true, title: { display: true, text: 'Megabytes' } } },
+          plugins: { legend: { display: false } }
         }
       });
     }
@@ -384,17 +460,38 @@ function showPerformanceDialog(metrics: {
             datasets: [{
               label: 'I/O Operations',
               data,
-              backgroundColor: ['rgba(153, 102, 255, 0.2)', 'rgba(255, 159, 64, 0.2)'],
+              backgroundColor: ['rgba(153, 102, 255, 0.4)', 'rgba(255, 159, 64, 0.4)'],
               borderColor: ['rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)'],
               borderWidth: 1
             }]
           },
           options: {
-            scales: { y: { beginAtZero: true } }
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Count' } } },
+            plugins: { legend: { display: false } }
           }
         });
       }
     }
   }
   dialog.launch();
+}
+
+/**
+ * Converts basic Markdown to HTML for display in the dialog.
+ * @param markdown The Markdown text to convert
+ * @returns HTML string
+ */
+function convertMarkdownToHtml(markdown: string): string {
+  let html = markdown
+    .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.*)$/gm, '<li>$1</li>')
+    .replace(/(\n<li>.*<\/li>)+/g, '<ul>$&</ul>')
+    .replace(/\n/g, '<br>');
+
+  // Ensure standalone text is wrapped properly
+  html = html.replace(/(^[^<].*?(?=<|$))/gm, '<p>$1</p>');
+  return html;
 }
