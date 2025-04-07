@@ -4,7 +4,7 @@ import {
 } from '@jupyterlab/application';
 import { ICommandPalette, ToolbarButton } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { generateCodeFromDescription, explainSelectedCode, measurePerformance, predictCodeBehavior } from './commands';
+import { generateCodeFromDescription, explainSelectedCode, measurePerformance, predictCodeBehavior,detectBugsInCell,detectAndResolveErrors,setupRealTimeFeedback} from './commands';
 
 /**
  * Initialization data for the ai-code-assistant extension.
@@ -76,8 +76,37 @@ const plugin: JupyterFrontEndPlugin<void> = {
     });
     palette.addItem({ command: predictCommand, category: 'AI Assistant' });
 
-    // Add button to notebook toolbar
+    const detectBugsCommand = 'ai:detect-bugs';
+    app.commands.addCommand(detectBugsCommand, {
+      label: 'Detect Bugs in Code',
+      execute: () => {
+        const current = notebookTracker.currentWidget;
+        if (current) {
+          detectBugsInCell(current);
+        } else {
+          console.warn('No active notebook found.');
+        }
+      }
+    });
+    palette.addItem({ command: detectBugsCommand, category: 'AI Assistant' });
+
+    const detectErrorsCommand = 'ai:detect-errors';
+    app.commands.addCommand(detectErrorsCommand, {
+      label: 'Detect and Resolve Errors',
+      execute: () => {
+        const current = notebookTracker.currentWidget;
+        if (current) {
+          detectAndResolveErrors(current);
+        } else {
+          console.warn('No active notebook found.');
+        }
+      }
+    });
+    palette.addItem({ command: detectErrorsCommand, category: 'AI Assistant' });
+
+    // Add buttons to notebook toolbar
     notebookTracker.widgetAdded.connect((sender, panel) => {
+      setupRealTimeFeedback(panel);
       const measureButton = new ToolbarButton({
         label: 'Measure Performance',
         onClick: () => app.commands.execute(measureCommand)
@@ -86,11 +115,29 @@ const plugin: JupyterFrontEndPlugin<void> = {
         label: 'Predict Behavior',
         onClick: () => app.commands.execute(predictCommand)
       });
+      const detectBugsButton = new ToolbarButton({
+        label: 'Detect Bugs',
+        onClick: () => app.commands.execute(detectBugsCommand)
+      });
+      const detectErrorsButton = new ToolbarButton({
+        label: 'Detect Errors',
+        onClick: () => app.commands.execute(detectErrorsCommand)
+      });
+      const generateCodeButton = new ToolbarButton({
+        label: 'Generate Code',
+        onClick: () => app.commands.execute(generateCommand)
+      });
+      const explainButton = new ToolbarButton({
+        label: 'Explain Code',
+        onClick: () => app.commands.execute(explainCommand)
+      });
+      panel.toolbar.insertItem(10, 'generateCode', generateCodeButton);
+      panel.toolbar.insertItem(11, 'explainCode', explainButton);
+      panel.toolbar.insertItem(12, 'detectErrors', detectErrorsButton);
       panel.toolbar.insertItem(10, 'measurePerformance', measureButton);
       panel.toolbar.insertItem(11, 'predictBehavior', predictButton);
+      panel.toolbar.insertItem(12, 'detectBugs', detectBugsButton);
     });
-
-
   }
 };
 

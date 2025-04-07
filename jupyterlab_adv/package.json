@@ -3,55 +3,56 @@
     "version": "0.1.0",
     "description": "A JupyterLab extension with AI-powered code assistant and enhanced predictive features.",
     "keywords": [
-      "jupyter",
-      "jupyterlab",
-      "jupyterlab-extension",
-      "predictive"
+        "jupyter",
+        "jupyterlab",
+        "jupyterlab-extension",
+        "predictive"
     ],
     "license": "BSD-3-Clause",
     "author": {
-      "name": "Pranay Dadi",
-      "email": "dadipranay9@gmail.com"
+        "name": "Pranay Dadi",
+        "email": "dadipranay9@gmail.com"
     },
     "files": [
-      "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
-      "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
-      "src/**/*.{ts,tsx}",
-      "schema/*.json"
+        "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
+        "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
+        "src/**/*.{ts,tsx}",
+        "schema/*.json"
     ],
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
     "style": "style/index.css",
     "scripts": {
-      "build": "tsc --build",
-      "build:labextension": "jupyter labextension build .",
-      "clean": "rimraf lib tsconfig.tsbuildinfo",
-      "watch": "tsc --watch",
-      "prepare": "npm run build"
+        "build": "tsc --build",
+        "build:labextension": "jupyter labextension build .",
+        "clean": "rimraf lib tsconfig.tsbuildinfo",
+        "watch": "tsc --watch",
+        "prepare": "npm run build"
     },
     "dependencies": {
-      "@jupyterlab/application": "^4.0.0",
-      "@jupyterlab/apputils": "^4.0.0",
-      "@jupyterlab/notebook": "^4.0.0",
-      "@jupyterlab/settingregistry": "^4.0.0",
-      "axios": "^1.8.3",
-      "chart.js": "^3.9.1",
-      "openai": "^4.67.3",
-      "ml-regression": "^5.0.0" 
+        "@jupyterlab/application": "^4.0.0",
+        "@jupyterlab/apputils": "^4.0.0",
+        "@jupyterlab/notebook": "^4.0.0",
+        "@jupyterlab/settingregistry": "^4.0.0",
+        "axios": "^1.8.3",
+        "chart.js": "^3.9.1",
+        "ml-regression": "^5.0.0",
+        "openai": "^4.67.3"
     },
     "devDependencies": {
-      "@jupyterlab/builder": "^4.0.0",
-      "@types/chart.js": "^2.9.41",
-      "@types/eslint": "^9.6.1",
-      "@types/jest": "^29.2.0",
-      "@types/json-schema": "^7.0.11",
-      "@types/node": "^14.14.37",
-      "rimraf": "^5.0.1",
-      "typescript": "~5.0.2"
+        "@jupyterlab/builder": "^4.0.0",
+        "@types/chart.js": "^2.9.41",
+        "@types/eslint": "^9.6.1",
+        "@types/jest": "^29.2.0",
+        "@types/json-schema": "^7.0.11",
+        "@types/lodash": "^4.17.16",
+        "@types/node": "^14.14.37",
+        "rimraf": "^5.0.1",
+        "typescript": "~5.0.2"
     },
     "jupyterlab": {
-      "extension": true,
-      "outputDir": "jupyterlab_adv/labextension",
-      "schemaDir": "schema"
+        "extension": true,
+        "outputDir": "jupyterlab_adv/labextension",
+        "schemaDir": "schema"
     }
-  }
+}

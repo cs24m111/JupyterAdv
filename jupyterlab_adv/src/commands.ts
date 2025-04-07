@@ -10,11 +10,192 @@ import { predictExecutionTime, predictErrors } from './predictive';
 import { suggestTypes } from './type-inference';
 import { suggestNextWorkflowStep } from './workflow';
 import { predictParameterImpact } from './parameter-impact';
+import { debounce } from 'lodash';
+import { Panel } from '@lumino/widgets';
 
 /**
  * Generates code from a user-provided description and inserts it into the active code cell.
  * @param notebookPanel The current notebook panel
  */
+function convertMarkdownToHtml(markdown: string): string {
+  let html = markdown
+    .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.*)$/gm, '<li>$1</li>')
+    .replace(/(\n<li>.*<\/li>)+/g, '<ul>$&</ul>')
+    .replace(/\n/g, '<br>');
+
+  // Ensure standalone text is wrapped properly
+  html = html.replace(/(^[^<].*?(?=<|$))/gm, '<p>$1</p>');
+  return html;
+}
+
+let floatingPanel: Panel | null = null;
+
+function showFloatingPanel(issues: string) {
+  if (!floatingPanel) {
+    floatingPanel = new Panel();
+    floatingPanel.id = 'error-feedback-panel';
+    floatingPanel.title.label = 'Potential Errors';
+    floatingPanel.addClass('floating-panel');
+    document.body.appendChild(floatingPanel.node);
+  }
+  floatingPanel.node.innerHTML = issues; // Assume issues are in HTML or Markdown format
+  floatingPanel.show();
+}
+
+const debouncedDetectErrors = debounce(async (code: string) => {
+  try {
+    const issues = await aiClient.detectErrors(code); // Assume aiClient is defined
+    showFloatingPanel(issues);
+  } catch (error) {
+    console.error('Error detecting issues:', error);
+  }
+}, 1000); // 1-second debounce
+
+export function setupRealTimeFeedback(notebookPanel: NotebookPanel) {
+  const notebook = notebookPanel.content;
+  notebook.model?.cells.changed.connect(() => {
+    const activeCell = notebook.activeCell;
+    if (activeCell && activeCell.model.type === 'code') {
+      const code = activeCell.model.sharedModel.getSource();
+      debouncedDetectErrors(code);
+    }
+  });
+}
+
+export async function detectAndResolveErrors(notebookPanel: NotebookPanel) {
+  const notebook = notebookPanel.content;
+  const activeCell = notebook.activeCell;
+
+  // Validate the active cell
+  if (!activeCell || activeCell.model.type !== 'code') {
+    await showDialog({ title: 'Error', body: 'Please select a code cell.', buttons: [Dialog.okButton()] });
+    return;
+  }
+
+  const code = activeCell.model.sharedModel.getSource();
+  if (!code.trim()) {
+    await showDialog({ title: 'Error', body: 'The code cell is empty.', buttons: [Dialog.okButton()] });
+    return;
+  }
+
+  try {
+    // Step 1: Detect errors
+    const issues = await aiClient.detectErrors(code);
+    const dialogBody = new Widget({ node: document.createElement('div') });
+    dialogBody.node.innerHTML = `
+      <style>
+        .error-report { padding: 15px; font-family: Arial, sans-serif; line-height: 1.6; }
+        .error-report h1, .error-report h2, .error-report h3 { margin: 0 0 10px 0; color: #0056d2; }
+        .error-report strong { font-weight: bold; }
+        .error-report ul { list-style-type: disc; padding-left: 20px; margin: 10px 0; }
+      </style>
+      <div class="error-report">${convertMarkdownToHtml(issues)}</div>
+    `;
+
+    const result = await showDialog({
+      title: 'Potential Runtime Errors',
+      body: dialogBody,
+      buttons: [Dialog.okButton({ label: 'Apply Patches' }), Dialog.cancelButton()]
+    });
+
+    // Step 2: Generate and display patches if the user opts in
+    if (result.button.accept) {
+      const patches = (await Promise.all(issues.split('\n').map(async (issue) => {
+        if (issue.startsWith('- ')) {
+          const patch = await aiClient.suggestPatch(code, issue.substring(2));
+          return { issue: issue.substring(2), patch };
+        }
+        return null;
+      }))).filter((patch): patch is { issue: string; patch: string } => patch !== null);
+
+      const patchDialogBody = new Widget({ node: document.createElement('div') });
+      patchDialogBody.node.innerHTML = patches.map(({ issue, patch }) => `
+        <div>
+          <h3>Issue: ${issue}</h3>
+          <pre>${patch}</pre>
+        </div>
+      `).join('');
+
+      await showDialog({
+        title: 'Suggested Patches',
+        body: patchDialogBody,
+        buttons: [Dialog.okButton()]
+      });
+    }
+  } catch (error) {
+    await showDialog({ title: 'Error', body: `Failed to detect errors: ${(error as Error).message}`, buttons: [Dialog.okButton()] });
+  }
+}
+export async function detectBugsInCell(notebookPanel: NotebookPanel) {
+  const notebook = notebookPanel.content;
+  const activeCell = notebook.activeCell;
+
+  // Check if the active cell is a code cell
+  if (!activeCell || activeCell.model.type !== 'code') {
+    await showDialog({
+      title: 'Error',
+      body: 'Please select a code cell.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  const code = activeCell.model.sharedModel.getSource();
+
+  // Check if the code is empty
+  if (!code.trim()) {
+    await showDialog({
+      title: 'Error',
+      body: 'The code cell is empty.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  try {
+    const issues = await aiClient.detectBugs(code);
+    const dialogBody = new Widget({ node: document.createElement('div') });
+    dialogBody.node.innerHTML = `
+      <style>
+        .bug-report {
+          padding: 15px;
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+        }
+        .bug-report h1, .bug-report h2, .bug-report h3 {
+          margin: 0 0 10px 0;
+          color: #0056d2;
+        }
+        .bug-report strong {
+          font-weight: bold;
+        }
+        .bug-report ul {
+          list-style-type: disc;
+          padding-left: 20px;
+          margin: 10px 0;
+        }
+      </style>
+      <div class="bug-report">${convertMarkdownToHtml(issues)}</div>
+    `;
+
+    await showDialog({
+      title: 'Potential Bugs',
+      body: dialogBody,
+      buttons: [Dialog.okButton()]
+    });
+  } catch (error) {
+    await showDialog({
+      title: 'Error',
+      body: `Failed to detect bugs: ${(error as Error).message}`,
+      buttons: [Dialog.okButton()]
+    });
+  }
+}
+
 export async function generateCodeFromDescription(notebookPanel: NotebookPanel) {
   const notebook = notebookPanel.content;
   const activeCell = notebook.activeCell;
@@ -485,20 +666,6 @@ async function showPerformanceDialog(metrics: {
  * @param markdown The Markdown text to convert
  * @returns HTML string
  */
-function convertMarkdownToHtml(markdown: string): string {
-  let html = markdown
-    .replace(/^# (.*)$/gm, '<h1>$1</h1>')
-    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.*)$/gm, '<h3>$1</h3>')
-    .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
-    .replace(/^- (.*)$/gm, '<li>$1</li>')
-    .replace(/(\n<li>.*<\/li>)+/g, '<ul>$&</ul>')
-    .replace(/\n/g, '<br>');
-
-  // Ensure standalone text is wrapped properly
-  html = html.replace(/(^[^<].*?(?=<|$))/gm, '<p>$1</p>');
-  return html;
-}
 
 export async function predictCodeBehavior(notebookPanel: NotebookPanel) {
   const notebook = notebookPanel.content;
@@ -557,3 +724,4 @@ export async function predictCodeBehavior(notebookPanel: NotebookPanel) {
     buttons: [Dialog.okButton()]
   });
 }
+
