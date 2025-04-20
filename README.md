@@ -1,4 +1,4 @@
-# JupyterAdvPart1
+# JupyterAdvPart
 ## To Install the extension -
 ## Clone the repository - The jupyterlab_adv folder
 ## Open terminal and navigate to this repository
