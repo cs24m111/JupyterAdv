@@ -33,7 +33,6 @@ Make sure this are installed.\
  jlpm watch\
  pip install .\
 
-git clone https://github.com/ReviewNB/jupyterlab-gitplus.git
 conda create -n test python=3.8
 conda activate test
 conda install -c conda-forge jupyterlab
