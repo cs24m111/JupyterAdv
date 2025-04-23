@@ -66,6 +66,325 @@ export function setupRealTimeFeedback(notebookPanel: NotebookPanel) {
   });
 }
 
+
+async function showStatisticsDashboard(stats: {
+  totalCells: number;
+  codeCells: number;
+  markdownCells: number;
+  rawCells: number;
+  totalLines: number;
+  executedCells: number;
+  libraries: Set<string>;
+}) {
+  const dialog = new Dialog({
+    title: 'Notebook Statistics',
+    body: new Widget(),
+    buttons: [Dialog.okButton()]
+  });
+
+  const content = dialog.node.querySelector('.jp-Dialog-content');
+  if (content) {
+    content.innerHTML = `
+      <style>
+        .stats-container { padding: 15px; font-family: Arial, sans-serif; line-height: 1.6; }
+        .stats-list { list-style: none; padding: 0; margin: 0; }
+        .stats-list li { padding: 8px 0; border-bottom: 1px solid #eee; }
+        .stats-list li:last-child { border-bottom: none; }
+        .chart-container { margin-top: 20px; }
+        h3 { margin: 0 0 10px 0; color: #0056d2; }
+      </style>
+      <div class="stats-container">
+        <h3>Notebook Statistics</h3>
+        <ul class="stats-list">
+          <li>Total Cells: ${stats.totalCells}</li>
+          <li>Code Cells: ${stats.codeCells}</li>
+          <li>Markdown Cells: ${stats.markdownCells}</li>
+          <li>Raw Cells: ${stats.rawCells}</li>
+          <li>Total Lines of Code: ${stats.totalLines}</li>
+          <li>Executed Code Cells: ${stats.executedCells}</li>
+          <li>Imported Libraries: ${Array.from(stats.libraries).join(', ') || 'None'}</li>
+        </ul>
+        <div class="chart-container">
+          <canvas id="cellTypeChart" width="400" height="300"></canvas>
+        </div>
+      </div>
+    `;
+
+    const canvas = content.querySelector('#cellTypeChart') as HTMLCanvasElement;
+    if (canvas) {
+      new Chart(canvas.getContext('2d')!, {
+        type: 'pie',
+        data: {
+          labels: ['Code Cells', 'Markdown Cells', 'Raw Cells'],
+          datasets: [{
+            data: [stats.codeCells, stats.markdownCells, stats.rawCells],
+            backgroundColor: [
+              'rgba(75, 192, 192, 0.4)',
+              'rgba(255, 99, 132, 0.4)',
+              'rgba(255, 206, 86, 0.4)'
+            ],
+            borderColor: [
+              'rgba(75, 192, 192, 1)',
+              'rgba(255, 99, 132, 1)',
+              'rgba(255, 206, 86, 1)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          plugins: { legend: { position: 'top' } }
+        }
+      });
+    }
+  }
+  dialog.launch();
+}
+export async function showNotebookStatistics(notebookPanel: NotebookPanel) {
+  const notebook = notebookPanel.content;
+  if (!notebook.model) {
+    await showDialog({
+      title: 'Error',
+      body: 'No notebook model available.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  const kernel = notebookPanel.sessionContext.session?.kernel;
+  if (!kernel) {
+    await showDialog({
+      title: 'Error',
+      body: 'No kernel available.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Calculate basic statistics
+  const cells = notebook.model.cells;
+  const stats = {
+    totalCells: cells.length,
+    codeCells: 0,
+    markdownCells: 0,
+    rawCells: 0,
+    totalLines: 0,
+    executedCells: 0,
+    libraries: new Set<string>()
+  };
+
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells.get(i);
+    if (cell.type === 'code') {
+      stats.codeCells++;
+      const code = cell.sharedModel.getSource();
+      stats.totalLines += code.split('\n').length;
+      if (cell.metadata && typeof (cell.metadata as any).get === 'function' && (cell.metadata as any).get('executionCount') !== undefined) {
+        stats.executedCells++;
+      }
+      // Extract libraries (similar to showLibraryVersions)
+      const importRegex = /(?:import\s+([\w, ]+)(?:\s+as\s+\w+)?|from\s+(\w+)\s+import\s+[\w, ]+)/g;
+      let match;
+      while ((match = importRegex.exec(code)) !== null) {
+        const imports = (match[1] || match[2] || '').split(',').map(lib => lib.trim()).filter(lib => lib);
+        imports.forEach(lib => stats.libraries.add(lib));
+      }
+    } else if (cell.type === 'markdown') {
+      stats.markdownCells++;
+    } else if (cell.type === 'raw') {
+      stats.rawCells++;
+    }
+  }
+
+  // Display the statistics dashboard
+  await showStatisticsDashboard(stats);
+}
+
+function parseDependencyGraph(output: string): { nodes: number[]; edges: [number, number][] } | null {
+  const startMarker = '===DEPENDENCY_GRAPH_START===';
+  const endMarker = '===DEPENDENCY_GRAPH_END===';
+  const startIndex = output.indexOf(startMarker);
+  const endIndex = output.indexOf(endMarker);
+
+  if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+    return null;
+  }
+
+  const graphOutput = output.substring(startIndex + startMarker.length, endIndex).trim();
+  try {
+    return JSON.parse(graphOutput);
+  } catch (error) {
+    console.error('Failed to parse dependency graph:', error);
+    return null;
+  }
+}
+
+async function showDependencyGraphDialog(graphData: { nodes: number[]; edges: [number, number][] }) {
+  const dialog = new Dialog({
+    title: 'Cell Dependency Graph',
+    body: new Widget(),
+    buttons: [Dialog.okButton()]
+  });
+
+  const content = dialog.node.querySelector('.jp-Dialog-content');
+  if (content) {
+    content.innerHTML = `
+      <style>
+        .graph-container { padding: 15px; font-family: Arial, sans-serif; }
+        .graph-canvas { max-width: 600px; max-height: 400px; }
+        h3 { margin: 0 0 10px 0; color: #0056d2; }
+      </style>
+      <div class="graph-container">
+        <h3>Cell Dependency Graph</h3>
+        <canvas id="dependencyGraph" width="600" height="400"></canvas>
+      </div>
+    `;
+
+    const canvas = content.querySelector('#dependencyGraph') as HTMLCanvasElement;
+    if (canvas) {
+      // Use Chart.js to render a simple node-link diagram
+      const nodes = graphData.nodes.map(idx => ({
+        id: idx,
+        label: `Cell ${idx + 1}`,
+        x: Math.random() * 600, // Simplified layout
+        y: Math.random() * 400
+      }));
+      const edges = graphData.edges.map(([from, to]) => ({
+        source: nodes[from],
+        target: nodes[to]
+      }));
+
+      new Chart(canvas.getContext('2d')!, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              label: 'Nodes',
+              data: nodes.map(node => ({ x: node.x, y: node.y })),
+              backgroundColor: 'rgba(75, 192, 192, 0.8)',
+              pointRadius: 10
+            },
+            {
+              label: 'Edges',
+              data: edges.flatMap((edge: { source: { x: number; y: number }; target: { x: number; y: number } }) => [
+                { x: edge.source.x, y: edge.source.y },
+                { x: edge.target.x, y: edge.target.y }
+              ]),
+              borderColor: 'rgba(255, 99, 132, 0.4)',
+              showLine: true,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  if (ctx.dataset.label === 'Nodes') {
+                    return nodes[ctx.dataIndex].label;
+                  }
+                  return '';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+  dialog.launch();
+}
+
+export async function generateDependencyGraph(notebookPanel: NotebookPanel) {
+  const notebook = notebookPanel.content;
+  if (!notebook.model) {
+    await showDialog({
+      title: 'Error',
+      body: 'No notebook model available.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  const kernel = notebookPanel.sessionContext.session?.kernel;
+  if (!kernel) {
+    await showDialog({
+      title: 'Error',
+      body: 'No kernel available.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Generate Python code to analyze variable definitions and usage
+  const dependencyCode = `
+import ast
+import json
+
+def analyze_cell_dependencies(cells):
+    defined_vars = {}
+    used_vars = {}
+    dependencies = []
+
+    for cell_idx, cell in enumerate(cells):
+        defined_vars[cell_idx] = set()
+        used_vars[cell_idx] = set()
+        try:
+            tree = ast.parse(cell)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Name):
+                    if isinstance(node.ctx, ast.Store):
+                        defined_vars[cell_idx].add(node.id)
+                    elif isinstance(node.ctx, ast.Load):
+                        used_vars[cell_idx].add(node.id)
+        except SyntaxError:
+            continue
+
+    for cell_idx in range(len(cells)):
+        for var in used_vars[cell_idx]:
+            for prev_idx in range(cell_idx):
+                if var in defined_vars[prev_idx]:
+                    dependencies.append((prev_idx, cell_idx))
+                    break
+
+    return {'nodes': list(range(len(cells))), 'edges': dependencies}
+
+cells = ${JSON.stringify(Array.from({ length: notebook.model?.cells.length || 0 }, (_, i) => notebook.model?.cells.get(i)?.sharedModel.getSource()))}
+result = analyze_cell_dependencies(cells)
+print("===DEPENDENCY_GRAPH_START===")
+print(json.dumps(result, indent=2))
+print("===DEPENDENCY_GRAPH_END===")
+`;
+
+  const future = kernel.requestExecute({ code: dependencyCode });
+  let output = '';
+  future.onIOPub = (msg: KernelMessage.IIOPubMessage) => {
+    if (msg.header.msg_type === 'stream' && (msg.content as any).name === 'stdout') {
+      output += (msg.content as any).text;
+    }
+  };
+  await future.done;
+
+  // Parse the dependency graph data
+  const graphData = parseDependencyGraph(output);
+  if (!graphData) {
+    await showDialog({
+      title: 'Error',
+      body: 'Failed to generate dependency graph.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Display the dependency graph
+  await showDependencyGraphDialog(graphData);
+}
+
 function parseLibraryVersions(output: string): { library: string; version: string }[] {
   const startMarker = '===LIBRARY_VERSIONS_START===';
   const endMarker = '===LIBRARY_VERSIONS_END===';

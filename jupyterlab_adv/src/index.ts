@@ -4,7 +4,7 @@ import {
 } from '@jupyterlab/application';
 import { ICommandPalette, ToolbarButton } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { generateCodeFromDescription, explainSelectedCode, measurePerformance, predictCodeBehavior,detectBugsInCell,detectAndResolveErrors,setupRealTimeFeedback,showLibraryVersions,analyzeVisualizations} from './commands';
+import { generateCodeFromDescription, explainSelectedCode, measurePerformance, predictCodeBehavior,detectBugsInCell,detectAndResolveErrors,setupRealTimeFeedback,showLibraryVersions,analyzeVisualizations,generateDependencyGraph,showNotebookStatistics} from './commands';
 
 /**
  * Initialization data for the ai-code-assistant extension.
@@ -20,6 +20,34 @@ const plugin: JupyterFrontEndPlugin<void> = {
     notebookTracker: INotebookTracker
   ) => {
     console.log('JupyterLab extension jupyter_adv is activated!');
+    
+    const dependencyGraphCommand = 'ai:dependency-graph';
+    app.commands.addCommand(dependencyGraphCommand, {
+      label: 'Generate Dependency Graph',
+      execute: () => {
+        const current = notebookTracker.currentWidget;
+        if (current) {
+          generateDependencyGraph(current);
+        } else {
+          console.warn('No active notebook found.');
+        }
+      }
+    });
+    palette.addItem({ command: dependencyGraphCommand, category: 'Notebook Tools' });
+
+    const notebookStatsCommand = 'ai:notebook-stats';
+    app.commands.addCommand(notebookStatsCommand, {
+      label: 'Show Notebook Statistics',
+      execute: () => {
+        const current = notebookTracker.currentWidget;
+        if (current) {
+          showNotebookStatistics(current);
+        } else {
+          console.warn('No active notebook found.');
+        }
+      }
+    });
+    palette.addItem({ command: notebookStatsCommand, category: 'Notebook Tools' });
     
     const analyzeVisualizationsCommand = 'ai:analyze-visualizations';
     app.commands.addCommand(analyzeVisualizationsCommand, {
@@ -167,6 +195,14 @@ const plugin: JupyterFrontEndPlugin<void> = {
         label: 'Analyze Visualizations',
         onClick: () => app.commands.execute(analyzeVisualizationsCommand)
       });
+      const dependencyGraphButton = new ToolbarButton({
+        label: 'Dependency Graph',
+        onClick: () => app.commands.execute(dependencyGraphCommand)
+      });
+      const notebookStatsButton = new ToolbarButton({
+        label: 'Notebook Stats',
+        onClick: () => app.commands.execute(notebookStatsCommand)
+      });
       panel.toolbar.insertItem(10, 'generateCode', generateCodeButton);
       panel.toolbar.insertItem(11, 'explainCode', explainButton);
       panel.toolbar.insertItem(12, 'detectErrors', detectErrorsButton);
@@ -175,6 +211,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
       panel.toolbar.insertItem(12, 'detectBugs', detectBugsButton);
       panel.toolbar.insertItem(16, 'libraryVersions', libraryVersionsButton);
       panel.toolbar.insertItem(17, 'analyzeVisualizations', analyzeVisualizationsButton);
+      panel.toolbar.insertItem(18, 'dependencyGraph', dependencyGraphButton);
+      panel.toolbar.insertItem(20, 'notebookStats', notebookStatsButton);
     });
   }
 };
