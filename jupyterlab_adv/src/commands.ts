@@ -66,6 +66,165 @@ export function setupRealTimeFeedback(notebookPanel: NotebookPanel) {
   });
 }
 
+function parseLibraryVersions(output: string): { library: string; version: string }[] {
+  const startMarker = '===LIBRARY_VERSIONS_START===';
+  const endMarker = '===LIBRARY_VERSIONS_END===';
+  const startIndex = output.indexOf(startMarker);
+  const endIndex = output.indexOf(endMarker);
+
+  if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+    return [];
+  }
+
+  const versionsOutput = output.substring(startIndex + startMarker.length, endIndex).trim();
+  const lines = versionsOutput.split('\n').map(line => line.trim()).filter(line => line);
+  return lines.map(line => {
+    const [library, version] = line.split(':').map(part => part.trim());
+    return { library, version };
+  });
+}
+
+async function showLibraryVersionsDialog(versions: { library: string; version: string }[]) {
+  const dialogBody = new Widget({ node: document.createElement('div') });
+  dialogBody.node.innerHTML = `
+    <style>
+      .versions-container {
+        padding: 15px;
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+      }
+      .versions-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .versions-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+      }
+      .versions-list li:last-child {
+        border-bottom: none;
+      }
+      h3 {
+        margin: 0 0 10px 0;
+        color: #0056d2;
+      }
+    </style>
+    <div class="versions-container">
+      <h3>Imported Library Versions</h3>
+      <ul class="versions-list">
+        ${versions.map(({ library, version }) => `<li><strong>${library}</strong>: ${version}</li>`).join('')}
+      </ul>
+    </div>
+  `;
+
+  await showDialog({
+    title: 'Library Versions',
+    body: dialogBody,
+    buttons: [Dialog.okButton()]
+  });
+}
+
+export async function showLibraryVersions(notebookPanel: NotebookPanel) {
+  const notebook = notebookPanel.content;
+  const activeCell = notebook.activeCell;
+
+  // Validate the active cell
+  if (!activeCell || activeCell.model.type !== 'code') {
+    await showDialog({
+      title: 'Error',
+      body: 'Please select a code cell.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  const code = activeCell.model.sharedModel.getSource();
+  if (!code.trim()) {
+    await showDialog({
+      title: 'Error',
+      body: 'The code cell is empty.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Extract imported libraries using a simple regex (handles `import x`, `from x import y`, and `import x as z`)
+  const importRegex = /(?:import\s+([\w, ]+)(?:\s+as\s+\w+)?|from\s+(\w+)\s+import\s+[\w, ]+)/g;
+  const libraries = new Set<string>();
+  let match;
+  while ((match = importRegex.exec(code)) !== null) {
+    const imports = (match[1] || match[2] || '').split(',').map(lib => lib.trim()).filter(lib => lib);
+    imports.forEach(lib => libraries.add(lib));
+  }
+
+  if (libraries.size === 0) {
+    await showDialog({
+      title: 'No Libraries Found',
+      body: 'No imported libraries detected in the active cell.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Generate Python code to check library versions
+  const versionCheckCode = `
+import pkg_resources
+import sys
+
+versions = {}
+for lib in [${Array.from(libraries).map(lib => `'${lib}'`).join(', ')}]:
+    try:
+        module = sys.modules.get(lib) or __import__(lib)
+        version = getattr(module, '__version__', None) or pkg_resources.get_distribution(lib).version
+        versions[lib] = version
+    except (ImportError, pkg_resources.DistributionNotFound, AttributeError):
+        versions[lib] = 'Not installed or version unavailable'
+
+print("===LIBRARY_VERSIONS_START===")
+for lib, version in versions.items():
+    print(f"{lib}: {version}")
+print("===LIBRARY_VERSIONS_END===")
+`;
+
+  const kernel = notebookPanel.sessionContext.session?.kernel;
+  if (!kernel) {
+    await showDialog({
+      title: 'Error',
+      body: 'No kernel available.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Execute the version check code
+  const future = kernel.requestExecute({ code: versionCheckCode });
+  let output = '';
+  future.onIOPub = (msg: KernelMessage.IIOPubMessage) => {
+    if (msg.header.msg_type === 'stream' && (msg.content as any).name === 'stdout') {
+      output += (msg.content as any).text;
+    }
+  };
+
+  await future.done;
+
+  // Parse the output to extract library versions
+  const versions = parseLibraryVersions(output);
+  if (versions.length === 0) {
+    await showDialog({
+      title: 'Error',
+      body: 'Failed to retrieve library versions. The code may have errors or no versions were found.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Display the versions in a dialog
+  await showLibraryVersionsDialog(versions);
+}
+
+
+
 export async function detectAndResolveErrors(notebookPanel: NotebookPanel) {
   const notebook = notebookPanel.content;
   const activeCell = notebook.activeCell;
@@ -724,4 +883,3 @@ export async function predictCodeBehavior(notebookPanel: NotebookPanel) {
     buttons: [Dialog.okButton()]
   });
 }
-

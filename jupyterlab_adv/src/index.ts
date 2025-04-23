@@ -4,7 +4,7 @@ import {
 } from '@jupyterlab/application';
 import { ICommandPalette, ToolbarButton } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { generateCodeFromDescription, explainSelectedCode, measurePerformance, predictCodeBehavior,detectBugsInCell,detectAndResolveErrors,setupRealTimeFeedback} from './commands';
+import { generateCodeFromDescription, explainSelectedCode, measurePerformance, predictCodeBehavior,detectBugsInCell,detectAndResolveErrors,setupRealTimeFeedback,showLibraryVersions} from './commands';
 
 /**
  * Initialization data for the ai-code-assistant extension.
@@ -19,8 +19,21 @@ const plugin: JupyterFrontEndPlugin<void> = {
     palette: ICommandPalette,
     notebookTracker: INotebookTracker
   ) => {
-    console.log('JupyterLab extension ai-code-assistant is activated!');
+    console.log('JupyterLab extension jupyter_adv is activated!');
 
+    const libraryVersionsCommand = 'ai:show-library-versions';
+    app.commands.addCommand(libraryVersionsCommand, {
+      label: 'Show Library Versions',
+      execute: () => {
+        const current = notebookTracker.currentWidget;
+        if (current) {
+          showLibraryVersions(current); // Call the new function
+        } else {
+          console.warn('No active notebook found.');
+        }
+      }
+    });
+    palette.addItem({ command: libraryVersionsCommand, category: 'AI Assistant' });
     // Command to generate code from description
     const generateCommand = 'ai:generate-code';
     app.commands.addCommand(generateCommand, {
@@ -131,12 +144,17 @@ const plugin: JupyterFrontEndPlugin<void> = {
         label: 'Explain Code',
         onClick: () => app.commands.execute(explainCommand)
       });
+      const libraryVersionsButton = new ToolbarButton({
+        label: 'Library Versions',
+        onClick: () => app.commands.execute(libraryVersionsCommand)
+      });
       panel.toolbar.insertItem(10, 'generateCode', generateCodeButton);
       panel.toolbar.insertItem(11, 'explainCode', explainButton);
       panel.toolbar.insertItem(12, 'detectErrors', detectErrorsButton);
       panel.toolbar.insertItem(10, 'measurePerformance', measureButton);
       panel.toolbar.insertItem(11, 'predictBehavior', predictButton);
       panel.toolbar.insertItem(12, 'detectBugs', detectBugsButton);
+      panel.toolbar.insertItem(16, 'libraryVersions', libraryVersionsButton);
     });
   }
 };
