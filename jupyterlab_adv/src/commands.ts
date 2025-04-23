@@ -628,6 +628,205 @@ async function generateSummary(metrics: {
   }
 }
 
+function parsePlotMetadata(output: string): {
+  title?: string;
+  xlabel?: string;
+  ylabel?: string;
+  plot_type?: string;
+  data?: any[];
+  error?: string;
+} | null {
+  const startMarker = '===PLOT_METADATA_START===';
+  const endMarker = '===PLOT_METADATA_END===';
+  const startIndex = output.indexOf(startMarker);
+  const endIndex = output.indexOf(endMarker);
+
+  if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+    return null;
+  }
+
+  const metadataOutput = output.substring(startIndex + startMarker.length, endIndex).trim();
+  try {
+    return JSON.parse(metadataOutput);
+  } catch (error) {
+    console.error('Failed to parse plot metadata:', error);
+    return null;
+  }
+}
+
+async function showVisualizationReportDialog(report: string) {
+  const dialogBody = new Widget({ node: document.createElement('div') });
+  dialogBody.node.innerHTML = `
+    <style>
+      .report-container {
+        padding: 15px;
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+      }
+      .report-container h1, .report-container h2, .report-container h3 {
+        margin: 0 0 10px 0;
+        color: #0056d2;
+      }
+      .report-container strong {
+        font-weight: bold;
+      }
+      .report-container ul {
+        list-style-type: disc;
+        padding-left: 20px;
+        margin: 10px 0;
+      }
+    </style>
+    <div class="report-container">${convertMarkdownToHtml(report)}</div>
+  `;
+
+  await showDialog({
+    title: 'Visualization Analysis Report',
+    body: dialogBody,
+    buttons: [Dialog.okButton()]
+  });
+}
+
+export async function analyzeVisualizations(notebookPanel: NotebookPanel) {
+  const notebook = notebookPanel.content;
+  const activeCell = notebook.activeCell;
+
+  // Validate the active cell
+  if (!activeCell || activeCell.model.type !== 'code') {
+    await showDialog({
+      title: 'Error',
+      body: 'Please select a code cell.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  const code = activeCell.model.sharedModel.getSource();
+  if (!code.trim()) {
+    await showDialog({
+      title: 'Error',
+      body: 'The code cell is empty.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Check if the code likely contains Matplotlib plotting
+  if (!code.includes('matplotlib') && !code.includes('plt.')) {
+    await showDialog({
+      title: 'No Visualizations Found',
+      body: 'No Matplotlib visualizations detected in the active cell.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Generate Python code to extract plot metadata
+  const metadataCode = `
+import matplotlib.pyplot as plt
+import json
+
+metadata = {
+    'title': None,
+    'xlabel': None,
+    'ylabel': None,
+    'plot_type': None,
+    'data': None
+}
+
+try:
+    # Assume the figure is already created in the cell
+    fig = plt.gcf()
+    axes = fig.get_axes()
+    if axes:
+        ax = axes[0]  // Analyze the first axis
+        metadata['title'] = ax.get_title()
+        metadata['xlabel'] = ax.get_xlabel()
+        metadata['ylabel'] = ax.get_ylabel()
+        // Attempt to infer plot type
+        if any(isinstance(child, matplotlib.lines.Line2D) for child in ax.get_children()):
+            metadata['plot_type'] = 'line'
+        elif any(isinstance(child, matplotlib.patches.Rectangle) for child in ax.get_children()):
+            metadata['plot_type'] = 'bar'
+        elif any(isinstance(child, matplotlib.collections.PathCollection) for child in ax.get_children()):
+            metadata['plot_type'] = 'scatter'
+        // Extract data (simplified, assumes line or scatter plot)
+        lines = ax.get_lines()
+        if lines:
+            data = [{'x': line.get_xdata().tolist(), 'y': line.get_ydata().tolist()} for line in lines]
+            metadata['data'] = data
+except Exception as e:
+    metadata['error'] = str(e)
+
+print("===PLOT_METADATA_START===")
+print(json.dumps(metadata, indent=2))
+print("===PLOT_METADATA_END===")
+`;
+
+  const kernel = notebookPanel.sessionContext.session?.kernel;
+  if (!kernel) {
+    await showDialog({
+      title: 'Error',
+      body: 'No kernel available.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Execute the original code to ensure the plot is generated
+  const future = kernel.requestExecute({ code });
+  await future.done;
+
+  // Execute the metadata extraction code
+  const metadataFuture = kernel.requestExecute({ code: metadataCode });
+  let metadataOutput = '';
+  metadataFuture.onIOPub = (msg: KernelMessage.IIOPubMessage) => {
+    if (msg.header.msg_type === 'stream' && (msg.content as any).name === 'stdout') {
+      metadataOutput += (msg.content as any).text;
+    }
+  };
+  await metadataFuture.done;
+
+  // Parse the metadata output
+  const metadata = parsePlotMetadata(metadataOutput);
+  if (!metadata) {
+    await showDialog({
+      title: 'Error',
+      body: 'Failed to extract plot metadata. Ensure the cell contains a valid Matplotlib plot.',
+      buttons: [Dialog.okButton()]
+    });
+    return;
+  }
+
+  // Generate a report using the AI client
+  const prompt = `
+Analyze the following Matplotlib plot metadata and generate a detailed report in Markdown format. Include:
+- A description of the plot type and its purpose.
+- Insights about the axes labels and title.
+- Observations about the data (e.g., trends, ranges, patterns).
+- Potential improvements or issues with the visualization.
+
+Metadata:
+- Title: ${metadata?.title || 'None'}
+- X-Label: ${metadata?.xlabel || 'None'}
+- Y-Label: ${metadata?.ylabel || 'None'}
+- Plot Type: ${metadata?.plot_type || 'Unknown'}
+- Data: ${metadata ? JSON.stringify(metadata.data) || 'None' : 'None'}
+
+Code:
+${code}
+  `;
+
+  try {
+    const report = await aiClient.explainCode(prompt); // Using explainCode for text analysis
+    await showVisualizationReportDialog(report);
+  } catch (error) {
+    await showDialog({
+      title: 'Error',
+      body: `Failed to generate visualization report: ${(error as Error).message}`,
+      buttons: [Dialog.okButton()]
+    });
+  }
+}
 /**
  * Displays performance metrics in a dialog with multiple charts and a Markdown-formatted summary.
  * @param metrics The performance metrics to display

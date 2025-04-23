@@ -4,7 +4,7 @@ import {
 } from '@jupyterlab/application';
 import { ICommandPalette, ToolbarButton } from '@jupyterlab/apputils';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { generateCodeFromDescription, explainSelectedCode, measurePerformance, predictCodeBehavior,detectBugsInCell,detectAndResolveErrors,setupRealTimeFeedback,showLibraryVersions} from './commands';
+import { generateCodeFromDescription, explainSelectedCode, measurePerformance, predictCodeBehavior,detectBugsInCell,detectAndResolveErrors,setupRealTimeFeedback,showLibraryVersions,analyzeVisualizations} from './commands';
 
 /**
  * Initialization data for the ai-code-assistant extension.
@@ -20,6 +20,20 @@ const plugin: JupyterFrontEndPlugin<void> = {
     notebookTracker: INotebookTracker
   ) => {
     console.log('JupyterLab extension jupyter_adv is activated!');
+    
+    const analyzeVisualizationsCommand = 'ai:analyze-visualizations';
+    app.commands.addCommand(analyzeVisualizationsCommand, {
+      label: 'Analyze Visualizations',
+      execute: () => {
+        const current = notebookTracker.currentWidget;
+        if (current) {
+          analyzeVisualizations(current); // Call the new function
+        } else {
+          console.warn('No active notebook found.');
+        }
+      }
+    });
+    palette.addItem({ command: analyzeVisualizationsCommand, category: 'AI Assistant' });
 
     const libraryVersionsCommand = 'ai:show-library-versions';
     app.commands.addCommand(libraryVersionsCommand, {
@@ -148,6 +162,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
         label: 'Library Versions',
         onClick: () => app.commands.execute(libraryVersionsCommand)
       });
+
+      const analyzeVisualizationsButton = new ToolbarButton({
+        label: 'Analyze Visualizations',
+        onClick: () => app.commands.execute(analyzeVisualizationsCommand)
+      });
       panel.toolbar.insertItem(10, 'generateCode', generateCodeButton);
       panel.toolbar.insertItem(11, 'explainCode', explainButton);
       panel.toolbar.insertItem(12, 'detectErrors', detectErrorsButton);
@@ -155,6 +174,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       panel.toolbar.insertItem(11, 'predictBehavior', predictButton);
       panel.toolbar.insertItem(12, 'detectBugs', detectBugsButton);
       panel.toolbar.insertItem(16, 'libraryVersions', libraryVersionsButton);
+      panel.toolbar.insertItem(17, 'analyzeVisualizations', analyzeVisualizationsButton);
     });
   }
 };
