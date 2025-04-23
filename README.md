@@ -8,7 +8,7 @@ Make sure this are installed.\
 # JupyterAdv Part 1 -
  This gives advanced features part of JupyterAdv\
  Generate Code, Explain Code, Performance Metrics, Predict Behavior, Error Detection and Bug detection are part of release 1.\
- Library Version, Analyze Visualizations are part of release 2.
+ Library Version, Analyze Visualizations, Code Dependency Monitor and Notebook Statistics are part of release 2.
  To Install the extension in part 1 -\
  Clone the repository - The jupyterlab_adv folder\
  Open terminal and navigate to this directory\
