@@ -4,6 +4,7 @@ First create a conda environment.\
 Install yarn, pip, nodejs using conda install package_manager_name.\
 Install jupyter lab using conda install -c conda-forge jupyterlab.\
 Make sure this are installed.\
+For all modules install necessary jupyter lab versions as specified in dependencies and devdependencies in package.json files of all modules.
 
 # JupyterAdv Part 1 -
  This gives advanced features part of JupyterAdv.\
