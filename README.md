@@ -24,7 +24,7 @@ Make sure this are installed.\
  This is part of release 2.\
  This gives the commenting feature part of JupyterAdv.
 
-#JupyterAdv Part 3 -
+# JupyterAdv Part 3 -
  This is part of release 2.\
  This gives the some of version control features to github.\
  To install extension - \
