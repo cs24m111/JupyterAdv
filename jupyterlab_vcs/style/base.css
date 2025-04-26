@@ -1,0 +1,154 @@
+.vcs-sidebar-widget {
+    background: #ffffff;
+    border-right: 1px solid #e2e8f0;
+    padding: 16px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .vcs-sidebar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .vcs-sidebar-header {
+    font-size: 18px;
+    font-weight: 700;
+    padding: 8px 0;
+    color: #1a202c;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .vcs-sidebar-header::before {
+    content: 'ＶＣＳ';
+    font-size: 20px;
+  }
+  
+  .vcs-status-container {
+    padding: 4px 0;
+  }
+  
+  .vcs-status {
+    font-size: 13px;
+    color: #48bb78;
+    font-style: italic;
+  }
+  
+  .vcs-status.error {
+    color: #f56565;
+  }
+  
+  .vcs-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: transform 0.1s ease, background 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .vcs-button:hover {
+    background: linear-gradient(135deg, #5a6dd5 0%, #683f92 100%);
+    transform: translateY(-1px);
+  }
+  
+  .vcs-button:active {
+    transform: translateY(0);
+  }
+  
+  .vcs-dialog-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #f7fafc;
+    border-radius: 8px;
+  }
+  
+  .vcs-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+  }
+  
+  .vcs-input:focus {
+    border-color: #667eea;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .vcs-textarea {
+    width: calc(100% - 24px);
+    min-height: 80px;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+  }
+  
+  .vcs-textarea:focus {
+    border-color: #667eea;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .vcs-checkbox {
+    margin-right: 8px;
+    accent-color: #667eea;
+  }
+  
+  .vcs-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+  
+  .vcs-link:hover {
+    color: #5a6dd5;
+    text-decoration: underline;
+  }
+  
+  select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    background: white;
+    transition: border-color 0.2s ease;
+  }
+  
+  select:focus {
+    border-color: #667eea;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 4px;
+  }
+  
+  .jp-Spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+  }
