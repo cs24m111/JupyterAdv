@@ -1,0 +1,5 @@
+node_modules/
+lib/
+*.pyc
+__pycache__/
+.ipynb_checkpoints/
