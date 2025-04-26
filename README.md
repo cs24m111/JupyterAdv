@@ -22,7 +22,14 @@ Make sure this are installed.\
 
 # JupyterAdv Part 2 -
  This is part of release 2.\
- This gives the commenting feature part of JupyterAdv.
+ This gives the commenting feature part of JupyterAdv.\
+ Clone the repository to your local environment.\
+ Change directory to the jupyterlab_apod directory
+ Then pip install -e "."\
+ Then jupyter labextension develop . --overwrite\
+ Then jlpm build\
+ This installs the jupyter labextension.\
+ Right sidebar has the comment feature.
 
 # JupyterAdv Part 3 -
  This is part of release 2.\
@@ -36,6 +43,7 @@ Make sure this are installed.\
  Then pre-commit install\
  Then jupyter labextension develop . --overwrite\
  Then jupyter server extension enable jupyterlab_vcs\
+ Then jlpm run build\
  This installs the server extension locally.\
  Open jupyterlab and side bar for vcs.\
  To use vcs -\
