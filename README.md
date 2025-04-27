@@ -25,7 +25,7 @@ For all modules install necessary jupyter lab versions - 4.4.1
  This is part of release 2.\
  This gives the commenting feature part of JupyterAdv.\
  Clone the repository to your local environment.\
- Change directory to the jupyterlab_apod directory
+ Change directory to the jupyterlab_apod directory.\
  Then pip install -e "."\
  Then jupyter labextension develop . --overwrite\
  Then jlpm build\
