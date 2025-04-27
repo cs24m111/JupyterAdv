@@ -33,7 +33,7 @@ For all modules install necessary jupyter lab versions - 4.4.1
  Right sidebar has the comment feature.
 
 # JupyterAdv Part 3 -
- Additional requirement - Install or set yarn version as 3.5.0 using npx yarn set version 3.5.0\
+ Additional requirement - Install or set yarn version as 3.5.0 using npx yarn set version 3.5.0 or normal version.\
  This is part of release 2.\
  This gives the some of version control features to github.\
  To install extension - \
