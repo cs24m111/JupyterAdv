@@ -2,9 +2,9 @@ JupyterAdv is spread into three modules.\
 Install each module at a time.\
 First create a conda environment.\
 Install yarn, pip, nodejs using conda install package_manager_name.\
-Install jupyter lab using conda install -c conda-forge jupyterlab.\
+Install jupyter lab using conda install jupyterlab.\
 Make sure this are installed.\
-For all modules install necessary jupyter lab versions as specified in dependencies and devdependencies in package.json files of all modules.
+For all modules install necessary jupyter lab versions - 4.4.1
 
 # JupyterAdv Part 1 -
  This gives advanced features part of JupyterAdv.\
@@ -33,6 +33,7 @@ For all modules install necessary jupyter lab versions as specified in dependenc
  Right sidebar has the comment feature.
 
 # JupyterAdv Part 3 -
+ Additional requirement - Install or set yarn version as 3.5.0 using npx yarn set version 3.5.0\
  This is part of release 2.\
  This gives the some of version control features to github.\
  To install extension - \
@@ -44,7 +45,7 @@ For all modules install necessary jupyter lab versions as specified in dependenc
  Then pre-commit install\
  Then jupyter labextension develop . --overwrite\
  Then jupyter server extension enable jupyterlab_vcs\
- Then jlpm run build\
+ Then jlpm run build - Optional (work or may not work based on version of yarn - Need not be runned for normal operation of extension.)\
  This installs the server extension locally.\
  Open jupyterlab and side bar for vcs.\
  To use vcs -\
