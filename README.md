@@ -28,7 +28,6 @@ For all modules install necessary jupyter lab versions - 4.4.1
  Change directory to the jupyterlab_apod directory.\
  Then pip install -e "."\
  Then jupyter labextension develop . --overwrite\
- Then jlpm build\
  This installs the jupyter labextension.\
  Right sidebar has the comment feature.
 
