@@ -10,8 +10,8 @@
         {
           "test": "/(?<!\\.raw)\\.css$/",
           "use": [
-            "/Users/seshu/Sites/experiments/jupyterlab-gitplus-v4/node_modules/style-loader/dist/cjs.js",
-            "/Users/seshu/Sites/experiments/jupyterlab-gitplus-v4/node_modules/css-loader/dist/cjs.js"
+            "/home/pranaydadi/Documents/SE Project/SE Tool Project/JupyterAdv/jupyterlab_vcs/node_modules/style-loader/dist/cjs.js",
+            "/home/pranaydadi/Documents/SE Project/SE Tool Project/JupyterAdv/jupyterlab_vcs/node_modules/css-loader/dist/cjs.js"
           ]
         },
         {
@@ -81,7 +81,7 @@
           "test": "/\\.js$/",
           "enforce": "pre",
           "use": [
-            "/Users/seshu/Sites/experiments/jupyterlab-gitplus-v4/node_modules/@jupyterlab/builder/node_modules/source-map-loader/dist/cjs.js"
+            "/home/pranaydadi/Documents/SE Project/SE Tool Project/JupyterAdv/jupyterlab_vcs/node_modules/@jupyterlab/builder/node_modules/source-map-loader/dist/cjs.js"
           ]
         }
       ]
@@ -91,8 +91,8 @@
         "url": false,
         "buffer": false,
         "crypto": false,
-        "path": "/Users/seshu/Sites/experiments/jupyterlab-gitplus-v4/node_modules/path-browserify/index.js",
-        "process": "/Users/seshu/Sites/experiments/jupyterlab-gitplus-v4/node_modules/process/browser.js"
+        "path": "/home/pranaydadi/Documents/SE Project/SE Tool Project/JupyterAdv/jupyterlab_vcs/node_modules/path-browserify/index.js",
+        "process": "/home/pranaydadi/Documents/SE Project/SE Tool Project/JupyterAdv/jupyterlab_vcs/node_modules/process/browser.js"
       }
     },
     "watchOptions": {
@@ -102,7 +102,7 @@
     "output": {
       "hashFunction": "sha256",
       "filename": "[name].[contenthash].js",
-      "path": "/Users/seshu/Sites/experiments/jupyterlab-gitplus-v4/jupyterlab_vcs/labextension/static",
+      "path": "/home/pranaydadi/Documents/SE Project/SE Tool Project/JupyterAdv/jupyterlab_vcs/jupyterlab_vcs/labextension/static",
       "publicPath": "auto"
     },
     "plugins": [
@@ -123,9 +123,9 @@
           },
           "filename": "remoteEntry.[contenthash].js",
           "exposes": {
-            "./index": "/Users/seshu/Sites/experiments/jupyterlab-gitplus-v4/lib/index.js",
-            "./extension": "/Users/seshu/Sites/experiments/jupyterlab-gitplus-v4/lib/index.js",
-            "./style": "/Users/seshu/Sites/experiments/jupyterlab-gitplus-v4/style/index.js"
+            "./index": "/home/pranaydadi/Documents/SE Project/SE Tool Project/JupyterAdv/jupyterlab_vcs/lib/index.js",
+            "./extension": "/home/pranaydadi/Documents/SE Project/SE Tool Project/JupyterAdv/jupyterlab_vcs/lib/index.js",
+            "./style": "/home/pranaydadi/Documents/SE Project/SE Tool Project/JupyterAdv/jupyterlab_vcs/style/index.js"
           },
           "shared": {
             "@jupyterlab/application": {
@@ -707,7 +707,7 @@
             "@pranay/jupyterlab_vcs": {
               "version": "0.0.1",
               "singleton": true,
-              "import": "/Users/seshu/Sites/experiments/jupyterlab-gitplus-v4/lib/index.js"
+              "import": "/home/pranaydadi/Documents/SE Project/SE Tool Project/JupyterAdv/jupyterlab_vcs/lib/index.js"
             }
           }
         }
