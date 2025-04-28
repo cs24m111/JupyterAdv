@@ -26,8 +26,10 @@ For all modules install necessary jupyter lab versions - 4.4.1
  This gives the commenting feature part of JupyterAdv in Windows.\
  Clone the repository to your local environment.\
  Change directory to the jupyterlab_com directory.\
+ Open terminal.\
+ Type Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass\
  Type ts-node src/server.ts\
-⚠This assumes you're on Windows and have ts-node installed.
+ This assumes you're on Windows and have ts-node installed.\
  Then jlpm build\
  Then jupyter labextension develop . --overwrite\
  Once JupyterLab opens in your browser, your extension should be active by using jupyter lab\
