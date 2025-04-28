@@ -58,4 +58,9 @@ For all modules install necessary jupyter lab versions - 4.4.1
  Enter git details in vcs.\
  Create local commits in vcs.\
  This are basic features implemented as part of github vcs and other parts are still under development.
+
+# Contributions -
+JupyterAdv Part 1 and Part 3 - Pranay.D\
+JupyterAdv Part 2 - Neha and Mounika\
+UI and verification - Srivally\
  
