@@ -6,6 +6,11 @@ Install jupyter lab using conda install jupyterlab.\
 Make sure this are installed.\
 For all modules install necessary jupyter lab versions - 4.4.1
 
+# Contributions -
+JupyterAdv Part 1 and Part 3 - Pranay.D\
+JupyterAdv Part 2 - Neha and Mounika\
+UI and verification - Srivally\
+
 # JupyterAdv Part 1 -
  This gives advanced features part of JupyterAdv.\
  Generate Code, Explain Code, Performance Metrics, Predict Behavior, Error Detection and Bug detection are part of release 1.\
@@ -59,8 +64,3 @@ For all modules install necessary jupyter lab versions - 4.4.1
  Create local commits in vcs.\
  This are basic features implemented as part of github vcs and other parts are still under development.
 
-# Contributions -
-JupyterAdv Part 1 and Part 3 - Pranay.D\
-JupyterAdv Part 2 - Neha and Mounika\
-UI and verification - Srivally\
- 
